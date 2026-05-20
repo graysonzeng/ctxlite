@@ -1,207 +1,153 @@
-# Design Review: ctxlite-mvp
+# Design Review: ctxlite MVP
 
 - Date: 2026-05-20
 - Reviewed Design: docs/specs/2026-05-20-ctxlite-mvp-design.md
-- Review Scope: MVP 全方案评审，含根因分析适用性判断、方案对比、详细设计、验证计划
+- Review Scope: Full MVP review, including root-cause applicability, option comparison, detailed design, and verification plan.
 
-## 1. 整体结论
+## 1. Overall Result
+
 - **NEEDS_REVISION**
-- 一句话结论：方向正确、核心架构合理，但存在 3 个 HIGH 级别缺陷——`brief.md` 重写缺少版本保护、`inbox.md` 归档语义不明确、CLI 技术栈和分发方式未指定——需修订后再进入实现。
+- Summary: the direction and core architecture are right, but the design needed three high-priority fixes before implementation: protect `brief.md` rewrites, define `inbox.md` archive semantics, and specify the CLI technology stack and distribution path.
 
-## 2. 根因评审结论（按需）
-- 适用性：**不适用**
-- 结论：**NOT_APPLICABLE**
-- 理由：本设计是新工具 MVP 方案，不是故障、回归或异常修复；方案选择由已知产品约束驱动（轻依赖、可迁移、自动化、MVP 简洁），不依赖任何需验证的根因判断。设计文档 §3 已明确标注"不需要根因分析"，判断正确。
+## 2. Root Cause Review
 
-### 2.1 证据检查
-- 不适用。
+- Applicability: **not applicable**
+- Result: **NOT_APPLICABLE**
+- Reason: this was a new-tool MVP design, not a bug, regression, or unknown failure. The option choice was driven by known product constraints: thin client dependency, portability, automation, and MVP simplicity.
 
-### 2.2 事实 / 假设边界检查
-- 不适用。
+### 2.1 Evidence Check
 
-### 2.3 对方案的影响检查
-- 不适用。
+- Not applicable.
 
-## 3. 设计方案评审
+### 2.2 Fact And Assumption Boundary
 
-### 3.1 需求与方向
-- **解决了正确的问题**：agent 跨 session 重复理解项目知识是真实痛点，文档对此定义清晰。
-- **成功标准明确**：§1.2 的 5 条标准均可验证，且与 MVP 范围匹配。
-- **非目标划定合理**：§1.4 正确排除了 MCP server、深度插件、向量数据库等过重方向。
-- **方向正确**：文件协议优先的独立 CLI（方案 A）是 MVP 约束下最优路径。方案 B（MCP 优先）和方案 C（平台插件优先）作为后续增强合理。
-- **与现有上下文文件的价值差异需更清晰**：`.ctx/brief.md` 与 `CLAUDE.md`/`AGENTS.md` 的定位差异在文档中隐含但未显式说明。建议增加一段说明：前者是自动沉淀的、会频繁重写的运行时上下文；后者是人工维护的、相对稳定的项目规则。
+- Not applicable.
 
-### 3.2 方案合理性
-- **核心架构合理**：`.ctx/` 文件协议 + CLI 工具 + 可选模型调用的三层架构简洁且可扩展。
-- **写入策略分层得当**：自动写入（brief/proposals/inbox）与谨慎写入（project/decisions/gotchas）的分离是正确的安全设计。
-- **降级策略完整**：无模型时规则式更新、模型调用失败时保留原文件、超长 brief 时二次压缩或拒绝写入——三个降级路径覆盖了主要失败场景。
-- **缺陷**：见 §4 主要发现。
+### 2.3 Design Impact
 
-### 3.3 实现可行性
-- **工期**：M 级别对 MVP 四个命令（init/update/pack/doctor）合理，但前提是技术栈已选定。
-- **依赖**：外部依赖少（git CLI、可选模型 endpoint），风险可控。
-- **可测试性**：§6 验证计划覆盖了初始化、更新、降级、安全、幂等、跨客户端六个维度，但幂等性验证缺少实现机制说明。
-- **风险**：技术栈未选型是当前最大的实现可行性风险。
+- Not applicable.
 
-### 3.4 文档质量
-- **完整性**：整体结构完整，从问题定义到方案对比到详细设计到验证计划一应俱全。
-- **一致性**：无明显前后矛盾。
-- **歧义**：`inbox.md` 归档策略、`pack` 与 `brief.md` 的关系、`AGENT_CONTEXT.md` 更新时机存在表述模糊。
-- **TODO/TBD**：无遗留占位符。
+## 3. Design Assessment
 
-## 4. 主要发现
+### 3.1 Requirements And Direction
 
-### CRITICAL
-（无）
+- The design targets the right problem: agents waste context repeatedly rediscovering project knowledge across sessions.
+- The success criteria are concrete enough to verify.
+- The non-goals correctly exclude a full MCP server, deep plugins, and a vector database from the MVP.
+- The file-protocol-first CLI is the best first option under the MVP constraints.
+- The design should explicitly explain how `.ctx/brief.md` differs from `AGENTS.md` and `CLAUDE.md`.
 
-### HIGH
+### 3.2 Architecture Fit
 
-### [HIGH] 数据安全: brief.md 全量重写缺少版本保护
+- The three-layer architecture of `.ctx/` files, CLI commands, and optional future model extraction is simple and extensible.
+- The write policy is safe: brief, proposals, and inbox are automatic; durable project docs and agent rules require review.
+- The fallback story is mostly complete: no-model operation, model failure preservation, and oversized brief handling are all considered.
+- The main gaps are listed in section 4.
 
-**位置**: §5.1、§5.4、§5.5
+### 3.3 Implementation Feasibility
 
-**问题**: `ctxlite update` 每次全量重写 `.ctx/brief.md`，但文档仅在"模型调用失败"时提到保留原文件。若模型调用成功但输出质量差（幻觉、遗漏关键信息、格式错误），当前设计没有任何保护机制——前一版 brief 直接丢失。
+- Scope M is reasonable for the four MVP commands.
+- External dependencies are limited to git and an optional model endpoint.
+- The verification plan covers initialization, update behavior, degraded mode, safety, idempotency, and cross-client usage.
+- The largest pre-implementation feasibility gap is the missing technology stack and distribution decision.
 
-**影响**: 一次低质量模型输出可能丢失经过多轮沉淀的项目知识，且用户可能在下次 agent 任务开始后才发现 brief 已被污染，此时回溯成本高。
+### 3.4 Documentation Quality
 
-**建议**: 在重写前将当前 `brief.md` 备份到 `.ctx/.brief.prev.md`（或时间戳文件），并在 `ctxlite doctor` 中增加 diff 检查。考虑 `update --diff` 模式让用户预览变更。
+- The structure is complete, from problem statement through options, detailed design, verification, and handoff.
+- No major internal contradictions were found.
+- Ambiguous areas: `inbox.md` archive behavior, `pack` versus `brief.md`, and `AGENT_CONTEXT.md` update policy.
 
----
+## 4. Findings
 
-### [HIGH] 数据流: inbox.md 归档语义不明确
+### Critical
 
-**位置**: §5.2 步骤 8、§5.4
+- None.
 
-**问题**: 文档多次提到"把已处理内容移动到归档段落或标记为已处理"，但未定义：(1) "归档段落"是 inbox.md 内的特定 section 还是独立文件？(2) "已处理"的判断标准是什么？(3) 归档内容是否有保留期限或清理策略？
+### High
 
-**影响**: 实现时缺少明确规约，不同实现者可能做出不兼容选择；inbox.md 可能无限膨胀或有用内容被过早清除。
+#### HIGH-1: `brief.md` Rewrite Lacks Version Protection
 
-**建议**: 明确定义 inbox.md 的文件结构（如 `## Pending` / `## Archived` 两段式），定义"已处理"的判定规则（如：内容已被 brief 或 proposals 引用），定义归档保留策略（如：保留最近 N 次 update 的归档，或 7 天后清除）。
+- Location: design sections 5.1, 5.4, and 5.5.
+- Problem: `ctxlite update` rewrites `.ctx/brief.md`, but the original design only preserved files on model-call failure. A successful but poor-quality output could overwrite valuable accumulated context.
+- Impact: one bad update could pollute or erase the project brief and users might only notice in a later agent session.
+- Recommendation: back up the current brief to `.ctx/.brief.prev.md` before every meaningful rewrite and have `doctor` report suspicious brief shrinkage. A future `--diff` mode would also help.
 
----
+#### HIGH-2: `inbox.md` Archive Semantics Are Underspecified
 
-### [HIGH] 实现可行性: CLI 技术栈和分发方式未指定
+- Location: design sections 5.2 and 5.4.
+- Problem: the design said processed items should move to an archive, but did not define the archive section, processed criteria, or retention behavior.
+- Impact: implementations could diverge, `inbox.md` could grow without bound, or useful raw notes could disappear too early.
+- Recommendation: define a two-section file structure with `## Pending` and `## Archived`, move items after they are absorbed into the brief or proposals, and keep a bounded archive.
 
-**位置**: §5（整节）
+#### HIGH-3: CLI Technology Stack And Distribution Are Missing
 
-**问题**: 设计文档详细定义了命令、文件格式和数据流，但完全未提及 CLI 用什么语言/运行时实现（Node.js/Python/Go/Rust/Shell），也未说明分发方式（npm/pip/brew/独立二进制）。
+- Location: design section 5.
+- Problem: the design defined commands and files but did not choose a language/runtime or distribution channel.
+- Impact: the stack affects installation friction, cross-platform behavior, API integration, schema validation, and test strategy.
+- Recommendation: use Node.js 20+, ESM JavaScript, and npm global installation for the MVP.
 
-**影响**: 技术栈选择直接影响：(1) 用户安装门槛（是否需要 Node/Python 运行时）；(2) 模型 API 调用实现复杂度；(3) JSON schema 校验方式；(4) 跨平台兼容性。这是进入实现前必须决定的前置项。
+### Medium
 
-**建议**: 在设计文档中增加技术栈选型段落。考虑到目标用户（代码 agent 使用者）通常已有 Node.js 环境，且需要调用 OpenAI-compatible API，Node.js + npm 全局安装是 MVP 阶段的务实选择。
+#### MEDIUM-1: `pack` And `brief.md` Need Clear Positioning
 
-### MEDIUM
+- Problem: both are described as agent startup context, but their roles differ.
+- Recommendation: define `brief.md` as persisted project context and `pack` as a one-shot bundle that may include current git signals and pending counts.
 
-### [MEDIUM] 概念重叠: pack 命令与 brief.md 的关系模糊
+#### MEDIUM-2: Proposal Idempotency Needs A Mechanism
 
-**位置**: §5.3
+- Problem: the verification plan expects duplicate proposals to be avoided, but the design did not define how.
+- Recommendation: compute a stable content hash for each proposal and skip already-known hashes.
 
-**问题**: `ctxlite pack` 输出"给 agent 使用的精简上下文包"，而 `.ctx/brief.md` 也被定义为"agent 起步上下文"。文档未说明两者的区别、使用场景差异和内容差异。
+#### MEDIUM-3: Proposal Lifecycle Needs Status Values
 
-**影响**: 用户和 agent 不知道该读 `brief.md` 还是运行 `pack`，造成使用困惑或重复读取。
+- Problem: proposals can be created and reviewed, but the design did not define how accepted, rejected, or stale items are represented.
+- Recommendation: use `pending`, `adopted`, `rejected`, and `expired`; have `doctor` warn about stale pending proposals later.
 
-**建议**: 明确定位：`brief.md` 是持久化的、人可读的上下文摘要；`pack` 是一次性生成的、可能包含更多信号（如当前 git 状态、最近 diff 摘要）的临时上下文包，适合作为 agent 启动 prompt 的一部分。或者在 MVP 中暂时去掉 `pack`，减少概念。
+#### MEDIUM-4: Model Environment Variables Need Defined Behavior
 
----
+- Problem: the configuration refers to environment variable names, but the original design did not define behavior when those variables are missing.
+- Recommendation: missing model variables should be treated like no model configuration, with a warning and rule-based fallback.
 
-### [MEDIUM] 幂等性: 验证计划有幂等要求但缺实现机制
+#### MEDIUM-5: Git Signal Range Needs A Default
 
-**位置**: §6 幂等验证
+- Problem: the design mentioned recent commit summaries without defining "recent".
+- Recommendation: use the latest five commits in the MVP and later consider tracking the previous update timestamp.
 
-**问题**: 验证计划要求"连续运行两次 ctxlite update，确认不会重复追加相同 proposal"，但设计中未说明如何实现幂等——是基于内容哈希去重、时间戳比对、还是语义去重？
+### Low
 
-**影响**: 不明确实现机制会导致实现时靠猜测，或者幂等性只在特定条件下成立。
+#### LOW-1: Cross-Client Verification Needs Observable Criteria
 
-**建议**: 在 §5 中增加 proposals 去重策略说明。MVP 建议：对每条 proposal 计算内容摘要哈希，写入时与已有 proposals 比对，相同则跳过。
+- Recommendation: compare whether agents cite key brief constraints, avoid recorded pitfalls, and show project understanding earlier.
 
----
+#### LOW-2: `AGENT_CONTEXT.md` Update Policy Needs Clarity
 
-### [MEDIUM] 生命周期: proposals.md 缺少清理和状态管理
+- Recommendation: generate it on `init`, never rewrite it during `update`, and have `doctor` check whether it exists.
 
-**位置**: §5.1、§5.4
+## 5. Recommended Revisions
 
-**问题**: 文档定义了 proposals 的写入（自动追加）和消费（人工 review 后升级为正式文档），但未定义：(1) 被采纳的 proposal 是否从文件中移除？(2) 被拒绝的 proposal 如何标记？(3) 长期不处理的 proposal 是否清理？
+1. Add `brief.md` backup behavior before rewrite.
+2. Define `inbox.md` sections, processed criteria, and archive retention.
+3. Add the Node.js/npm technology stack and distribution decision.
+4. Clarify `pack` versus `brief.md`.
+5. Define proposal dedupe and lifecycle.
+6. Define model environment fallback and git signal range.
 
-**影响**: proposals.md 会持续膨胀，信噪比下降，最终变成另一个被忽略的文件。
+## 6. Next Step
 
-**建议**: 定义 proposal 状态流转（pending → adopted / rejected / expired），并在 `ctxlite doctor` 中检查超过 N 天未处理的 proposal 数量。
-
----
-
-### [MEDIUM] 配置: 模型环境变量解析和缺失处理未定义
-
-**位置**: §5.3 配置示例
-
-**问题**: config.yaml 使用 `base_url_env` 和 `api_key_env` 引用环境变量名而非直接值（安全设计正确），但未定义：环境变量不存在时是否等同于"无模型配置"并走降级路径？是否有提示？
-
-**影响**: 用户配置了 model 段但忘记设环境变量时，行为不可预期。
-
-**建议**: 明确：环境变量未设置时等同于无模型配置，走规则式降级路径，并输出警告提示用户设置对应环境变量。
-
----
-
-### [MEDIUM] 信号收集: update 命令的 git 信号范围未明确
-
-**位置**: §5.1
-
-**问题**: 文档提到收集 `git status`、`git diff --stat`、最近提交摘要，但未定义"最近"的范围——是最近 N 条 commit？自上次 update 以来？自某个标记以来？
-
-**影响**: 信号范围过大会导致 token 浪费和模型输出质量下降；范围过小会遗漏关键变更。
-
-**建议**: 定义默认范围（如自上次 `ctxlite update` 以来的 commit，通过 `.ctx/.last-update-timestamp` 追踪），并支持 `--since` 参数覆盖。
-
-### LOW
-
-### [LOW] 验证: 跨客户端验证方案缺少对比维度
-
-**位置**: §6 跨客户端验证
-
-**问题**: 验证计划要求"分别让 Claude Code、Codex、CodeBuddy 读取 brief.md 并执行同一小任务，比较是否能正确复用项目知识"，但未定义"正确复用"的对比维度和评判标准。
-
-**影响**: 验证结果主观，难以判断通过/未通过。
-
-**建议**: 定义 2-3 个可观察的验证指标，如：(1) agent 是否在任务中引用了 brief 中的关键约束；(2) 是否避免了 brief 中已记录的踩坑点；(3) 是否在首轮回复中就展示了项目理解。
-
----
-
-### [LOW] 文档: AGENT_CONTEXT.md 更新策略不明确
-
-**位置**: §5.2、§5.3
-
-**问题**: `AGENT_CONTEXT.md` 在 `ctxlite init` 时创建，但文档未说明后续 update 是否会更新它、何时需要重新生成。
-
-**影响**: 初始化后如果 `.ctx/` 文件结构发生变化（如新增文件类型），`AGENT_CONTEXT.md` 中的说明可能过时。
-
-**建议**: 明确：`AGENT_CONTEXT.md` 仅在 `ctxlite init` 时生成，用户可手动编辑；`ctxlite doctor` 检查其与当前 `.ctx/` 结构的一致性。
-
-## 5. 修订建议
-
-按优先级排序：
-
-1. **增加 brief.md 重写前备份机制**（HIGH）：在 §5.4 或 §5.5 中增加备份策略，至少保留前一版。
-2. **定义 inbox.md 文件结构和归档规则**（HIGH）：在 §5.4 中明确段落结构、已处理判定标准和归档保留策略。
-3. **增加技术栈选型段落**（HIGH）：在 §5 中新增一节，说明语言、运行时和分发方式的选择及理由。
-4. **澄清 pack 与 brief.md 的定位差异**（MEDIUM）：在 §5.1 或 §5.3 中增加一段说明。
-5. **定义 proposals 去重和生命周期管理**（MEDIUM）：在 §5.4 中补充。
-6. **定义环境变量解析行为和 git 信号范围**（MEDIUM）：在 §5.3 和 §5.1 中分别补充。
-
-## 6. 下一步建议
-- 进入 design-implement，在实现过程中修订上述 HIGH 项。
-- 理由：方案方向和核心架构正确，HIGH 项均为设计细节补全而非方向性问题，可在实现阶段一并修订，无需回到 brainstorm 重新设计。
+- Move into design implementation.
+- Reason: the direction is sound and the high-priority items are design-detail gaps, not architecture blockers.
 
 ## 7. Handoff
 
-### 7.1 同会话继续
-直接执行 $design-implement 或 /design-implement
+### 7.1 Continue In The Same Session
 
-### 7.2 新会话恢复 prompt
+Run `$design-implement` or `/design-implement`.
+
+### 7.2 Resume Prompt
+
 ```text
-请阅读设计输入 docs/specs/2026-05-20-ctxlite-mvp-design.md
-以及评审文档 docs/plans/2026-05-20-ctxlite-mvp-design-review.md，
-重点核对根因分析（如有）、事实/假设边界、以及方案修订点，
-使用 $design-implement（或 /design-implement）进行方案修订及实现。
-重点关注：
-- HIGH-1：brief.md 全量重写缺少版本保护，需增加备份机制
-- HIGH-2：inbox.md 归档语义不明确，需定义文件结构和归档规则
-- HIGH-3：CLI 技术栈和分发方式未指定，需增加选型段落
+Read docs/specs/2026-05-20-ctxlite-mvp-design.md and
+docs/plans/2026-05-20-ctxlite-mvp-design-review.md.
+Apply the high-priority design revisions and implement the MVP.
+Focus on brief backup, inbox archive semantics, and the CLI technology stack.
 ```

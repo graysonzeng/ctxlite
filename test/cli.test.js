@@ -1,5 +1,5 @@
 import { Readable, Writable } from "node:stream";
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -52,6 +52,7 @@ Need docs for release flow and a rule about not editing generated files.
     assert.match(inbox, /## Pending\n\n## Archived/);
     assert.match(inbox, /processed into brief\/proposals candidate set/);
     assert.equal((proposals.match(/ctxlite:proposal-hash=/g) ?? []).length, 1);
+    assert.doesNotMatch(proposals, /\n\n$/);
 
     await writeFile(join(dir, ".ctx", "inbox.md"), `# Inbox
 
@@ -124,6 +125,14 @@ test("pack emits valid json", async () => {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test("package exposes a normalized executable bin entry", async () => {
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const binStats = await stat(new URL("../bin/ctxlite.js", import.meta.url));
+
+  assert.equal(packageJson.bin.ctxlite, "bin/ctxlite.js");
+  assert.equal(Boolean(binStats.mode & 0o111), true);
 });
 
 test("pack markdown labels pending proposal count", async () => {
