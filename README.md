@@ -62,6 +62,12 @@ After meaningful work, the agent updates the project context:
 ctxlite update
 ```
 
+On a fresh project, `ctxlite update` bootstraps the brief from stable project files such as `README.md`, `package.json`, and Markdown files under `docs/`. You can also pass session notes when the important context only exists in the current conversation:
+
+```bash
+ctxlite update --notes notes.md
+```
+
 When a one-shot context bundle is useful, generate one:
 
 ```bash
@@ -78,10 +84,13 @@ ctxlite doctor
 
 ctxlite keeps the noisy and uncertain parts of project memory away from long-term rules:
 
+- `.ctx/config.yaml`: project-level settings for brief size and future update controls.
 - `.ctx/brief.md`: short startup context for agents.
+- `.ctx/project.md`, `.ctx/decisions.md`, `.ctx/gotchas.md`: stable docs that are created as reviewable placeholders.
 - `.ctx/inbox.md`: raw notes waiting to be processed.
 - `.ctx/proposals.md`: suggestions that need human review before becoming durable rules or docs.
 - `.ctx/.brief.prev.md`: previous brief backup for recovery and comparison.
+- `.ctx/.last-update.json`: metadata from the most recent update.
 - `AGENT_CONTEXT.md`: portable instructions that can be copied into `AGENTS.md`, `CLAUDE.md`, or other client rule files.
 
 Stable human-authored rules still belong in files like `AGENTS.md`, `CLAUDE.md`, or project docs. ctxlite is the lightweight maintenance layer around them.
@@ -108,3 +117,27 @@ ctxlite update
 ctxlite pack
 ctxlite doctor
 ```
+
+## Example
+
+```bash
+ctxlite init
+ctxlite update --notes notes.md
+ctxlite pack --format json
+```
+
+The generated brief stays intentionally small:
+
+```markdown
+# Project Brief
+
+## Project Snapshot
+- README.md: ctxlite - Lightweight project context compiler for coding agents.
+- package.json: ctxlite - Lightweight project context compiler for coding agents.
+- scripts: test, check
+
+## Reusable Context From Last Update
+- Keep public docs generic and reviewable.
+```
+
+Pending ideas are written to `.ctx/proposals.md` instead of silently becoming permanent instructions.

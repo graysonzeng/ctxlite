@@ -70,6 +70,48 @@ Need docs for release flow and a rule about not editing generated files.
   }
 });
 
+test("update bootstraps brief from stable project files when inbox is empty", async () => {
+  const dir = await tempProject();
+  try {
+    await writeFile(join(dir, "README.md"), `# Tiny App
+
+Tiny App keeps project context short and current.
+
+## Usage
+
+Run the CLI after meaningful work.
+`, "utf8");
+    await writeFile(join(dir, "package.json"), JSON.stringify({
+      name: "tiny-app",
+      description: "A tiny context helper.",
+      scripts: {
+        test: "node --test",
+        check: "node --check src/index.js"
+      }
+    }, null, 2), "utf8");
+    await mkdir(join(dir, "docs"));
+    await writeFile(join(dir, "docs", "architecture.md"), `# Architecture
+
+## Runtime Context
+
+Agents read a short brief before work.
+`, "utf8");
+
+    await captureRun(["init"], dir);
+    const { code } = await captureRun(["update"], dir);
+    assert.equal(code, 0);
+
+    const brief = await readFile(join(dir, ".ctx", "brief.md"), "utf8");
+    assert.match(brief, /## Project Snapshot/);
+    assert.match(brief, /README\.md: Tiny App - Tiny App keeps project context short and current\./);
+    assert.match(brief, /package\.json: tiny-app - A tiny context helper\./);
+    assert.match(brief, /scripts: test, check/);
+    assert.match(brief, /docs\/architecture\.md: Architecture; Runtime Context/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("pack emits valid json", async () => {
   const dir = await tempProject();
   try {
@@ -143,6 +185,23 @@ test("doctor reports healthy ctx and missing critical files", async () => {
       assert.match(missing.stdout, /- missing \.ctx\/proposals\.md/);
       assert.match(missing.stderr, /warning: \.ctx\/proposals\.md is missing/);
     });
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("doctor does not warn about model env when default config has no model block", async () => {
+  const dir = await tempProject();
+  try {
+    await captureRun(["init"], dir);
+    const config = await readFile(join(dir, ".ctx", "config.yaml"), "utf8");
+    assert.doesNotMatch(config, /base_url_env/);
+    assert.doesNotMatch(config, /api_key_env/);
+
+    const { code, stdout, stderr } = await captureRun(["doctor"], dir);
+    assert.equal(code, 0);
+    assert.match(stdout, /## Warnings\n- none/);
+    assert.equal(stderr, "");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

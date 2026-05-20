@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import {
   copyFile,
   mkdir,
+  readdir,
   readFile,
   writeFile
 } from "node:fs/promises";
@@ -124,9 +125,10 @@ async function updateCommand({ cwd, flags, stdin, stdout, stderr }) {
   const inbox = parseInbox(await readOptional(inboxPath, inboxTemplate()));
   const pendingItems = [inbox.pending, notes].filter(Boolean).join("\n\n").trim();
   const git = collectGitSignals(cwd);
+  const projectSignals = await collectProjectSignals(cwd);
   const briefPath = join(ctxDir, "brief.md");
   const currentBrief = await readOptional(briefPath, briefTemplate(projectName));
-  const nextBrief = enforceLineBudget(buildBrief({ projectName, now, git, pendingItems }), briefBudget);
+  const nextBrief = enforceLineBudget(buildBrief({ projectName, now, git, pendingItems, projectSignals }), briefBudget);
   const proposalCandidates = buildProposalCandidates(pendingItems, now);
   const proposalsPath = join(ctxDir, "proposals.md");
   const currentProposals = await readOptional(proposalsPath, proposalsTemplate());
@@ -342,7 +344,7 @@ function gitOutput(cwd, args) {
   }
 }
 
-function buildBrief({ projectName, now, git, pendingItems }) {
+function buildBrief({ projectName, now, git, pendingItems, projectSignals }) {
   const pendingSummary = summarizeBlock(pendingItems, 12) || "No reusable inbox notes were pending at the last update.";
   return `# Project Brief
 
@@ -357,6 +359,8 @@ function buildBrief({ projectName, now, git, pendingItems }) {
 
 ## Current Signals
 ${formatGitSignals(git)}
+## Project Snapshot
+${formatProjectSignals(projectSignals)}
 ## Reusable Context From Last Update
 ${pendingSummary}
 
@@ -364,6 +368,114 @@ ${pendingSummary}
 - \`AGENTS.md\` / \`CLAUDE.md\` remain the source for stable hand-written rules.
 - This brief is an auto-maintained runtime summary and may be replaced on each update.
 `;
+}
+
+async function collectProjectSignals(cwd) {
+  const signals = [];
+  const readme = await readOptional(join(cwd, "README.md"));
+  if (readme.trim()) {
+    signals.push(`README.md: ${summarizeReadme(readme)}`);
+  }
+
+  const packageJson = await readOptional(join(cwd, "package.json"));
+  if (packageJson.trim()) {
+    signals.push(...summarizePackageJson(packageJson));
+  }
+
+  signals.push(...await collectDocSignals(cwd));
+  return signals.slice(0, 12);
+}
+
+function summarizeReadme(content) {
+  const title = firstMarkdownHeading(content);
+  const paragraph = firstMarkdownParagraph(content);
+  return [title, paragraph].filter(Boolean).join(" - ") || "present";
+}
+
+function summarizePackageJson(content) {
+  try {
+    const pkg = JSON.parse(content);
+    const signals = [];
+    const name = typeof pkg.name === "string" ? pkg.name : "unnamed package";
+    const description = typeof pkg.description === "string" ? pkg.description : "";
+    signals.push(`package.json: ${[name, description].filter(Boolean).join(" - ")}`);
+    const scripts = pkg.scripts && typeof pkg.scripts === "object" ? Object.keys(pkg.scripts) : [];
+    if (scripts.length > 0) {
+      signals.push(`scripts: ${scripts.slice(0, 8).join(", ")}`);
+    }
+    return signals;
+  } catch {
+    return ["package.json: present but could not be parsed"];
+  }
+}
+
+async function collectDocSignals(cwd) {
+  const docsDir = join(cwd, "docs");
+  const files = await listMarkdownFiles(docsDir);
+  const signals = [];
+  for (const filePath of files.slice(0, 6)) {
+    const content = await readOptional(filePath);
+    const headings = markdownHeadings(content).slice(0, 3);
+    if (headings.length > 0) {
+      signals.push(`${displayPath(cwd, filePath)}: ${headings.join("; ")}`);
+    }
+  }
+  return signals;
+}
+
+async function listMarkdownFiles(dir) {
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+
+  const files = [];
+  for (const entry of entries) {
+    const entryPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await listMarkdownFiles(entryPath));
+      continue;
+    }
+    if (entry.isFile() && entry.name.toLowerCase().endsWith(".md")) {
+      files.push(entryPath);
+    }
+  }
+  return files.sort();
+}
+
+function firstMarkdownHeading(content) {
+  return markdownHeadings(content)[0] ?? "";
+}
+
+function markdownHeadings(content) {
+  return content
+    .split(/\r?\n/)
+    .map((line) => line.match(/^#{1,3}\s+(.+?)\s*$/)?.[1])
+    .filter(Boolean)
+    .map(cleanInlineMarkdown);
+}
+
+function firstMarkdownParagraph(content) {
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("```")) {
+      continue;
+    }
+    return cleanInlineMarkdown(trimmed);
+  }
+  return "";
+}
+
+function cleanInlineMarkdown(text) {
+  return text
+    .replace(/[`*_~]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function enforceLineBudget(content, budget) {
@@ -394,6 +506,13 @@ function formatGitSignals(git) {
     `- Diff stat: ${git.diffStat || "none"}`,
     `- Recent commits: ${git.recentCommits || "none"}`
   ].join("\n") + "\n";
+}
+
+function formatProjectSignals(signals) {
+  if (!signals || signals.length === 0) {
+    return "- No stable project files found yet.\n";
+  }
+  return `${signals.map((signal) => `- ${signal}`).join("\n")}\n`;
 }
 
 function parseInbox(content) {
@@ -536,11 +655,6 @@ Usage:
 function configTemplate(projectName) {
   return `project_name: ${projectName}
 brief_budget_tokens: 2000
-model:
-  provider: openai-compatible
-  base_url_env: CTXLITE_BASE_URL
-  api_key_env: CTXLITE_API_KEY
-  name: ctx-auto
 update:
   # planned, not yet implemented: update review controls
   auto_write:
