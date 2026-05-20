@@ -52,6 +52,7 @@ Need docs for release flow and a rule about not editing generated files.
     assert.match(inbox, /## Pending\n\n## Archived/);
     assert.match(inbox, /processed into brief\/proposals candidate set/);
     assert.equal((proposals.match(/ctxlite:proposal-hash=/g) ?? []).length, 1);
+    assert.doesNotMatch(proposals, /\n\n$/);
 
     await writeFile(join(dir, ".ctx", "inbox.md"), `# Inbox
 

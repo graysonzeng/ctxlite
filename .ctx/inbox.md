@@ -6,6 +6,11 @@ Add raw observations under Pending. `ctxlite update` moves processed entries to 
 
 ## Archived
 
+### 2026-05-20T15:59:44.359Z
+- Result: processed into brief/proposals candidate set
+
+> Release-readiness continuation: committed English-only documentation and ctx dogfood, current branch is codex/release-readiness, working tree is clean before this ctxlite update, npm registry currently has no public ctxlite package, and npm publish is blocked until npm auth is configured.
+
 ### 2026-05-20T15:33:31.715Z
 - Result: processed into brief/proposals candidate set
 

@@ -618,7 +618,7 @@ function formatProposal(candidate) {
 <!-- ctxlite:proposal-hash=${candidate.hash} -->
 
 ${candidate.body}
-`;
+`.trimEnd();
 }
 
 function countPendingProposals(content) {
