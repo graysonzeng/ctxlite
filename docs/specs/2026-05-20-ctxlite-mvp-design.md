@@ -224,7 +224,7 @@ sources:
 
 ### 8.2 新会话恢复 prompt
 ```text
-请阅读设计文档 /Users/sheng/tencent/ctxlite/docs/superpowers/specs/2026-05-20-ctxlite-mvp-design.md，
+请阅读设计文档 /Users/sheng/tencent/ctxlite/docs/specs/2026-05-20-ctxlite-mvp-design.md，
 使用 $design-review（或 /design-review）对该方案进行评审；若文档包含根因分析，
 请一并分析根因判断、证据与设计方案是否正确、合理，以及两者是否一致。
 ```

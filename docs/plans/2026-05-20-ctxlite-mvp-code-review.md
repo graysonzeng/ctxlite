@@ -1,9 +1,9 @@
 # Code Review: ctxlite MVP
 
 - Date: 2026-05-20
-- Design Input: docs/superpowers/specs/2026-05-20-ctxlite-mvp-design.md
-- Implementation Doc: docs/superpowers/plans/2026-05-20-ctxlite-mvp-implementation.md
-- Design Review: docs/superpowers/plans/2026-05-20-ctxlite-mvp-design-review.md
+- Design Input: docs/specs/2026-05-20-ctxlite-mvp-design.md
+- Implementation Doc: docs/plans/2026-05-20-ctxlite-mvp-implementation.md
+- Design Review: docs/plans/2026-05-20-ctxlite-mvp-design-review.md
 - Reviewed Files: `src/cli.js`, `bin/ctxlite.js`, `test/cli.test.js`, `package.json`
 
 ## 1. 整体结论
@@ -180,8 +180,8 @@ default:
 
 ### 7.2 新会话恢复 prompt
 ```text
-请阅读实现文档 /Users/sheng/tencent/ctxlite/docs/superpowers/plans/2026-05-20-ctxlite-mvp-implementation.md、
-审查文档 /Users/sheng/tencent/ctxlite/docs/superpowers/plans/2026-05-20-ctxlite-mvp-code-review.md，
+请阅读实现文档 /Users/sheng/tencent/ctxlite/docs/plans/2026-05-20-ctxlite-mvp-implementation.md、
+审查文档 /Users/sheng/tencent/ctxlite/docs/plans/2026-05-20-ctxlite-mvp-code-review.md，
 以及本次代码变更，
 使用 $fix-implement（或 /fix-implement）进行方案修复及代码实现。
 重点修复 HIGH-1：doctor 命令零测试覆盖，补充 doctor、dry-run、notes、错误路径和 brief 截断测试。

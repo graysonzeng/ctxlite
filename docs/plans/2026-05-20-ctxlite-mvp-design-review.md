@@ -1,7 +1,7 @@
 # Design Review: ctxlite-mvp
 
 - Date: 2026-05-20
-- Reviewed Design: docs/superpowers/specs/2026-05-20-ctxlite-mvp-design.md
+- Reviewed Design: docs/specs/2026-05-20-ctxlite-mvp-design.md
 - Review Scope: MVP 全方案评审，含根因分析适用性判断、方案对比、详细设计、验证计划
 
 ## 1. 整体结论
@@ -196,8 +196,8 @@
 
 ### 7.2 新会话恢复 prompt
 ```text
-请阅读设计输入 docs/superpowers/specs/2026-05-20-ctxlite-mvp-design.md
-以及评审文档 docs/superpowers/plans/2026-05-20-ctxlite-mvp-design-review.md，
+请阅读设计输入 docs/specs/2026-05-20-ctxlite-mvp-design.md
+以及评审文档 docs/plans/2026-05-20-ctxlite-mvp-design-review.md，
 重点核对根因分析（如有）、事实/假设边界、以及方案修订点，
 使用 $design-implement（或 /design-implement）进行方案修订及实现。
 重点关注：

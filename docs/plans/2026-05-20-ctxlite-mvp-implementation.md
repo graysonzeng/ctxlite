@@ -1,8 +1,8 @@
 # Implementation: ctxlite MVP
 
 - Date: 2026-05-20
-- Design Doc: /Users/sheng/tencent/ctxlite/docs/superpowers/specs/2026-05-20-ctxlite-mvp-design.md
-- Review Doc: /Users/sheng/tencent/ctxlite/docs/superpowers/plans/2026-05-20-ctxlite-mvp-design-review.md
+- Design Doc: /Users/sheng/tencent/ctxlite/docs/specs/2026-05-20-ctxlite-mvp-design.md
+- Review Doc: /Users/sheng/tencent/ctxlite/docs/plans/2026-05-20-ctxlite-mvp-design-review.md
 - Status: Completed
 
 ## 1. 评审意见处理摘要
@@ -85,8 +85,8 @@
 
 ### 7.2 新会话恢复 prompt
 ```text
-请阅读设计输入 /Users/sheng/tencent/ctxlite/docs/superpowers/specs/2026-05-20-ctxlite-mvp-design.md、
-实现文档 /Users/sheng/tencent/ctxlite/docs/superpowers/plans/2026-05-20-ctxlite-mvp-implementation.md，
+请阅读设计输入 /Users/sheng/tencent/ctxlite/docs/specs/2026-05-20-ctxlite-mvp-design.md、
+实现文档 /Users/sheng/tencent/ctxlite/docs/plans/2026-05-20-ctxlite-mvp-implementation.md，
 以及本次提交的代码变更，
 重点核对根因前提（如有）、设计修订、实现结果与验证证据是否一致，
 使用 $code-review（或 /code-review）进行方案重审及代码审查。
@@ -95,7 +95,7 @@
 ## 8. 修复实现补充
 
 - 修复日期：2026-05-20
-- 对应审查文档：/Users/sheng/tencent/ctxlite/docs/superpowers/plans/2026-05-20-ctxlite-mvp-code-review.md
+- 对应审查文档：/Users/sheng/tencent/ctxlite/docs/plans/2026-05-20-ctxlite-mvp-code-review.md
 
 ### 8.1 实现补充
 
