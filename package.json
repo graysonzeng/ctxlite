@@ -19,7 +19,7 @@
     "url": "git+https://github.com/graysonzeng/ctxlite.git"
   },
   "bin": {
-    "ctxlite": "./bin/ctxlite.js"
+    "ctxlite": "bin/ctxlite.js"
   },
   "files": [
     "bin/",
